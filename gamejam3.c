@@ -42,7 +42,7 @@ extern char demo_sounds[];
 typedef enum { SND_START, SND_HIT, SND_COIN, SND_JUMP } SFXIndex;
 
 ///// DEFINES
-
+#define PLAT 8
 #define COLS 30		// floor width in tiles
 #define ROWS 60		// total scrollable height in tiles
 
@@ -56,7 +56,7 @@ typedef enum { SND_START, SND_HIT, SND_COIN, SND_JUMP } SFXIndex;
 #define ACTOR_MAX_X 228		// rightmost position of actor
 #define ACTOR_SCROLL_UP_Y 110	// min Y position to scroll up
 #define ACTOR_SCROLL_DOWN_Y 140	// max Y position to scroll down
-#define JUMP_VELOCITY 22	// Y velocity when jumping
+#define JUMP_VELOCITY 20	// Y velocity when jumping
 
 // constants for various tiles
 #define CH_BORDER 0x40
@@ -67,7 +67,26 @@ typedef enum { SND_START, SND_HIT, SND_COIN, SND_JUMP } SFXIndex;
 #define CH_BASEMENT 0x97
 
 ///// GLOBALS
+#define TILE 0xd8
+#define ATTR 0x00
 
+#define TILE2 0xdc
+#define ATTR2 0x02
+
+const unsigned char paddle[]={
+        0,      0,      TILE+0,   ATTR, 
+        0,      8,      TILE+1,   ATTR, 
+        8,      0,      TILE+2,   ATTR, 
+        8,      8,      TILE+3,   ATTR, 
+        128};
+
+#define NUM_ACTORS 1
+
+byte actor_x[NUM_ACTORS];
+byte actor_y[NUM_ACTORS];
+// actor x/y deltas per frame (signed)
+sbyte actor_dx[NUM_ACTORS];
+sbyte actor_dy[NUM_ACTORS];
 // vertical scroll amount in pixels
 static int scroll_pixel_yy = 0;
 
@@ -86,7 +105,7 @@ static byte vbright = 4;
 // random byte between (a ... b-1)
 // use rand() because rand8() has a cycle of 255
 byte rndint(byte a, byte b) {
-  return (rand() % (b-a)) + a;
+  return (rand() % (b-a)+a);
 }
 
 // return nametable address for tile (x,y)
@@ -176,6 +195,17 @@ typedef struct Floor {
   //int objpos:4;		// X position of object
 } Floor;
 
+
+typedef struct Platform {
+  byte ypos;		// # of tiles from ground
+  int height:4;		// # of tiles to next floor
+  int gap:4;		// X position of gap
+  //int ladder1:4;	// X position of first ladder
+  //int ladder2:4;	// X position of second ladder
+  //int objtype:4;	// item type (FloorItem)
+  //int objpos:4;		// X position of object
+} Platform;
+
 // various items the player can pick up
 //typedef enum FloorItem { ITEM_NONE, ITEM_MINE, ITEM_HEART, ITEM_POWER };
 
@@ -202,9 +232,13 @@ void make_floors() {
   byte i;
   byte y = BOTTOM_FLOOR_Y;
   Floor* prevlev = &floors[0];
-  for (i=0; i<MAX_FLOORS; i++) {
+  for (i=0; i<6; i++) {
     Floor* lev = &floors[i];
-    lev->height = rndint(2,5)*2;
+    lev->height = rndint(2,4)*2;
+    
+    lev->ypos = y;
+    y += lev->height;
+    prevlev = lev;
  
     
   }
@@ -225,6 +259,8 @@ void draw_floor_line(byte row_height) {
   byte rowy;		// row in nametable (0-59)
   word addr;		// nametable address
   byte i;		// loop counter
+  
+
   // loop over all floors
   for (floor=0; floor<MAX_FLOORS; floor++) {
     Floor* lev = &floors[floor];
@@ -290,7 +326,7 @@ void draw_floor_line(byte row_height) {
 // filling up entire name table
 void draw_entire_stage() {
   byte y;
-  for (y=0; y<ROWS; y++) {
+  for (y=0; y<6; y++) {
     draw_floor_line(y);
     // allow buffer to flush, delaying a frame
     vrambuf_flush();
@@ -306,6 +342,13 @@ word get_floor_yy(byte floor) {
 word get_ceiling_yy(byte floor) {
   return (floors[floor].ypos + floors[floor].height) * 8 + 16;
 }
+
+
+//////START
+
+
+//////END
+
 
 // set scrolling position
 void set_scroll_pixel_yy(int yy) {
@@ -447,18 +490,7 @@ void refresh_sprites() {
 }
 
 // if ladder is close to X position, return ladder X position, otherwise 0
-byte is_ladder_close(byte actor_x, byte ladder_pos) {
-  byte ladder_x;
-  if (ladder_pos == 0)
-    return 0;
-  ladder_x = ladder_pos * 16;
-  return ((byte)(actor_x - ladder_x) < 16) ? ladder_x : 0;
-}
 
-// get the closest ladder to the player
-
-
-// put the player on the ladder, and move up or down (floor_adjust)
 
 
 // should we scroll the screen upward?
@@ -493,20 +525,24 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
     case WALKING:
       // left/right has priority over climbing
       if (joystick & PAD_A) {
+        
         actor->state = JUMPING;
+                  //actor->floor++;
+
         actor->xvel = 0;
         actor->yvel = JUMP_VELOCITY;
         if (joystick & PAD_LEFT) actor->xvel = -2;
         if (joystick & PAD_RIGHT) actor->xvel = 2;
-        
+                  actor->yy++;
+
         // play sound for player
         if (scroll) sfx_play(SND_JUMP,0);
       } else if (joystick & PAD_LEFT) {
-        actor->x--;
+        actor->x-=2;
         actor->dir = 3;
         actor->state = WALKING;
       } else if (joystick & PAD_RIGHT) {
-        actor->x++;
+        actor->x+=2;
         actor->dir = 0;
         actor->state = WALKING;
       }
@@ -554,6 +590,8 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
       actor->x += actor->xvel;
       actor->yy += actor->yvel/4;
       actor->yvel -= 1;
+      //actor->floor+=1;
+
       if (actor->yy <= get_floor_yy(actor->floor)) {
 	actor->yy = get_floor_yy(actor->floor);
         actor->state = STANDING;
@@ -728,13 +766,57 @@ void setup_sounds() {
   nmi_set_callback(famitone_update);
 }
 
+
+
+void title()
+{
+  ppu_off();
+pal_col(0,0x02);	// set screen to dark blue
+  pal_col(1,0x14);	// fuchsia
+  pal_col(2,0x20);	// grey
+  pal_col(3,0x30);
+  
+  
+  vram_adr(NTADR_A(6, 12));
+  vram_write("Press ENTER to Start", 20);
+  
+  vram_adr(NTADR_A(9, 16));
+  vram_write("Arrows to Move", 14);
+  
+  vram_adr(NTADR_A(9, 18));
+  vram_write("SPACE to Jump", 13);
+  
+  ppu_on_all();
+  //Start for 1 player
+   while(1){     
+     if(pad_trigger(0)&PAD_START)
+     {return ;
+       //break;
+     }
+    
+    }
+  
+  
+}
 // main program
 void main() {
-  setup_sounds();		// init famitone library
+  char i;	// actor index
+  char oam_id;	// sprite ID
+  //char pad;
+  setup_sounds();
+  title();// init famitone library
   while (1) {
+    for (i=0; i<1; i++) {
+      
+      
+      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, paddle);
+      actor_x[i] += actor_dx[i];
+      actor_y[i] += actor_dy[i];
+    }
     setup_graphics();		// setup PPU, clear screen
     sfx_play(SND_START,0);	// play starting sound
     make_floors();		// make random level
+    
     music_play(0);		// start the music
     play_scene();		// play the level
   }
