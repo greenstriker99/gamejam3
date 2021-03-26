@@ -1,13 +1,4 @@
 
-/*
-A platform game with a randomly generated stage.
-Uses the Famitone2 library for sound and music.
-It scrolls vertically (horizontal mirroring) and nametable
-updates are performed offscreen one row at a time with the
-draw_floor_line() function.
-The enemies use the same movement logic as the player, just
-with random inputs.
-*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -67,18 +58,7 @@ typedef enum { SND_START, SND_HIT, SND_COIN, SND_JUMP } SFXIndex;
 #define CH_BASEMENT 0x97
 
 ///// GLOBALS
-#define TILE 0xd8
-#define ATTR 0x00
 
-#define TILE2 0xdc
-#define ATTR2 0x02
-
-const unsigned char paddle[]={
-        0,      0,      TILE+0,   ATTR, 
-        0,      8,      TILE+1,   ATTR, 
-        8,      0,      TILE+2,   ATTR, 
-        8,      8,      TILE+3,   ATTR, 
-        128};
 
 #define NUM_ACTORS 1
 
@@ -164,13 +144,6 @@ DEF_METASPRITE_2x2_FLIP(playerLJump, 0xe8, 0);
 DEF_METASPRITE_2x2_FLIP(playerLClimb, 0xec, 0);
 DEF_METASPRITE_2x2_FLIP(playerLSad, 0xf0, 0);
 
-// rescuee at top of building
-const unsigned char personToSave[]={
-        0,      0,      (0xba)+0,   3, 
-        0,      8,      (0xba)+2,   0, 
-        8,      0,      (0xba)+1,   3, 
-        8,      8,      (0xba)+3,   0, 
-        128};
 
 // player run sequence
 const unsigned char* const playerRunSeq[16] = {
@@ -189,25 +162,9 @@ typedef struct Floor {
   byte ypos;		// # of tiles from ground
   int height:4;		// # of tiles to next floor
   int gap:4;		// X position of gap
-  //int ladder1:4;	// X position of first ladder
-  //int ladder2:4;	// X position of second ladder
-  //int objtype:4;	// item type (FloorItem)
-  //int objpos:4;		// X position of object
 } Floor;
 
 
-typedef struct Platform {
-  byte ypos;		// # of tiles from ground
-  int height:4;		// # of tiles to next floor
-  int gap:4;		// X position of gap
-  //int ladder1:4;	// X position of first ladder
-  //int ladder2:4;	// X position of second ladder
-  //int objtype:4;	// item type (FloorItem)
-  //int objpos:4;		// X position of object
-} Platform;
-
-// various items the player can pick up
-//typedef enum FloorItem { ITEM_NONE, ITEM_MINE, ITEM_HEART, ITEM_POWER };
 
 // array of floors
 Floor floors[MAX_FLOORS];
@@ -222,10 +179,6 @@ bool is_in_gap(byte x, byte gap) {
   }
 }
 
-// is this ladder at (tile) position x within the gap?
-//bool ladder_in_gap(byte x, byte gap) {
-//  return gap && x >= gap && x < gap+GAPSIZE*2;
-//}
 
 // create floors at start of game
 void make_floors() {
@@ -242,9 +195,10 @@ void make_floors() {
  
     
   }
-  // top floor is special
   
 }
+
+
 
 // creete actors on floor_index, if slot is empty
 //void create_actors_on_floor(byte floor_index);
@@ -344,12 +298,6 @@ word get_ceiling_yy(byte floor) {
 }
 
 
-//////START
-
-
-//////END
-
-
 // set scrolling position
 void set_scroll_pixel_yy(int yy) {
   // draw an offscreen line, every 8 pixels
@@ -367,12 +315,7 @@ void set_scroll_pixel_yy(int yy) {
   scroll(0, 479 - ((yy + 224) % 480));
 }
 
-// redraw a floor when object picked up
-void refresh_floor(byte floor) {
-  byte y = floors[floor].ypos;	// get floor bottom coordinate
-  draw_floor_line(y+2);		// redraw 3rd line
-  draw_floor_line(y+3);		// redraw 4th line
-}
+
 
 ///// ACTORS
 
@@ -399,27 +342,6 @@ typedef struct Actor {
 
 Actor actors[MAX_ACTORS];	// all actors
 
-// creete actors on floor_index, if slot is empty
-void create_actors_on_floor(byte floor_index) {
-  byte actor_index = (floor_index % (MAX_ACTORS-1)) + 1;
-  struct Actor* a = &actors[actor_index];
-  if (!a->onscreen) {
-    Floor *floor = &floors[floor_index];
-    a->state = STANDING;
-    a->name = ACTOR_ENEMY;
-    a->x = rand8();
-    a->yy = get_floor_yy(floor_index);
-    a->floor = floor_index;
-    a->onscreen = 1;
-    // rescue person on top of the building
-    if (floor_index == MAX_FLOORS-1) {
-      a->name = ACTOR_RESCUE;
-      a->state = PACING;
-      a->x = 0;
-      a->pal = 1;
-    }
-  }
-}
 
 void draw_actor(byte i) {
   struct Actor* a = &actors[i];
@@ -454,7 +376,7 @@ void draw_actor(byte i) {
       meta = (a->yy & 4) ? playerLClimb : playerRClimb;
       break;
     case PACING:
-      meta = personToSave;
+      //meta = personToSave;
       break;
   }
   // set sprite values, draw sprite
@@ -489,9 +411,6 @@ void refresh_sprites() {
   oam_hide_rest(oam_off);
 }
 
-// if ladder is close to X position, return ladder X position, otherwise 0
-
-
 
 // should we scroll the screen upward?
 void check_scroll_up() {
@@ -503,13 +422,13 @@ void check_scroll_up() {
 // should we scroll the screen downward?
 void check_scroll_down() {
   if (player_screen_y > ACTOR_SCROLL_DOWN_Y && scroll_pixel_yy > 0) {
-    set_scroll_pixel_yy(scroll_pixel_yy - 1);	// scroll down
+    set_scroll_pixel_yy(scroll_pixel_yy - 3);	// scroll down
   }
 }
 
 // actor falls down a floor
 void fall_down(struct Actor* actor) {
-  actor->floor--;
+  //actor->floor--;
   actor->state = FALLING;
   actor->xvel = 0;
   actor->yvel = 0;
@@ -527,13 +446,11 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
       if (joystick & PAD_A) {
         
         actor->state = JUMPING;
-                  //actor->floor++;
-
         actor->xvel = 0;
         actor->yvel = JUMP_VELOCITY;
         if (joystick & PAD_LEFT) actor->xvel = -2;
         if (joystick & PAD_RIGHT) actor->xvel = 2;
-                  actor->yy++;
+        actor->yy++;
 
         // play sound for player
         if (scroll) sfx_play(SND_JUMP,0);
@@ -547,6 +464,7 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
         actor->state = WALKING;
       }
       else if(joystick & PAD_UP){
+        //float
         actor->yy++;
         actor->dir = 0;
         actor->state = WALKING;
@@ -560,37 +478,20 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
       }
       break;
       
-    case CLIMBING:
-      if (joystick & PAD_UP) {
-      	if (actor->yy >= get_ceiling_yy(actor->floor)) {
-          actor->floor++;
-          actor->state = STANDING;
-        } else {
-          actor->yy++;
-        }
-      } else if (joystick & PAD_DOWN) {
-        if (actor->yy <= get_floor_yy(actor->floor)) {
-          actor->state = STANDING;
-        } else {
-          actor->yy--;
-        }
-      }
-      if (scroll) {
-        check_scroll_up();
-        check_scroll_down();
-      }
-      break;
-      
     case FALLING:
       if (scroll) {
         check_scroll_up();
         check_scroll_down();
       }
+      actor->state = STANDING;
+      break;
+      
     case JUMPING:
       actor->x += actor->xvel;
       actor->yy += actor->yvel/4;
       actor->yvel -= 1;
-      //actor->floor+=1;
+      //actor->state = STANDING;
+      
 
       if (actor->yy <= get_floor_yy(actor->floor)) {
 	actor->yy = get_floor_yy(actor->floor);
@@ -601,11 +502,7 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
   // don't allow player to travel past left/right edges of screen
   if (actor->x > ACTOR_MAX_X) actor->x = ACTOR_MAX_X; // we wrapped around right edge
   if (actor->x < ACTOR_MIN_X) actor->x = ACTOR_MIN_X;
-  // if player lands in a gap, they fall (switch to JUMPING state)
-  if (actor->state <= WALKING && 
-      is_in_gap(actor->x, floors[actor->floor].gap)) {
-    fall_down(actor);
-  }
+  
 }
 
 // should we pickup an object? only player does this
@@ -647,11 +544,7 @@ bool check_collision(Actor* a) {
 
 ///
 
-const char* RESCUE_TEXT = 
-  "Is this a rescue?\n"
-  "I am just hanging out\n"
-  "on top of this building.\n"
-  "Get lost!!!";
+
 
 // draw a message on the screen
 void type_message(const char* charptr) {
@@ -681,16 +574,7 @@ void type_message(const char* charptr) {
 }
 
 // reward scene when player reaches roof
-void rescue_scene() {
-  // make player face to the left
-  actors[0].dir = 1;
-  actors[0].state = STANDING;
-  refresh_sprites();
-  music_stop();
-  type_message(RESCUE_TEXT);
-  // wait 2 seconds
-  delay(100);
-}
+
 
 // game loop
 void play_scene() {
@@ -729,22 +613,21 @@ void play_scene() {
     }
   }
   // player reached goal; reward scene  
-  rescue_scene();
 }
 
 /*{pal:"nes",layout:"nes"}*/
 const char PALETTE[32] = { 
   0x22,			// background color
 
-  0x11,0x30,0x27, 0x0,	// ladders and pickups
-  0x1c,0x20,0x2c, 0x0,	// floor blocks
-  0x00,0x10,0x20, 0x0,
-  0x06,0x16,0x26, 0x0,
+  0x36,0x20,0x0D, 0x0,	// ladders and pickups
+  0x36,0x20,0x0D, 0x0,	// floor blocks
+  0x36,0x20,0x0D, 0x0,
+  0x36,0x20,0x0D, 0x0,
 
   0x16,0x35,0x24, 0x0,	// enemy sprites
   0x00,0x37,0x25, 0x0,	// rescue person
   0x0d,0x2d,0x3a, 0x0,
-  0x17,0x44,0x17	// player sprites
+  0x0D,0x37,0x1B	// player sprites
 };
 
 // set up PPU
@@ -771,7 +654,7 @@ void setup_sounds() {
 void title()
 {
   ppu_off();
-pal_col(0,0x02);	// set screen to dark blue
+  pal_col(0,0x02);	// set screen to dark blue
   pal_col(1,0x14);	// fuchsia
   pal_col(2,0x20);	// grey
   pal_col(3,0x30);
@@ -800,22 +683,15 @@ pal_col(0,0x02);	// set screen to dark blue
 }
 // main program
 void main() {
-  char i;	// actor index
-  char oam_id;	// sprite ID
-  //char pad;
   setup_sounds();
   title();// init famitone library
   while (1) {
-    for (i=0; i<1; i++) {
-      
-      
-      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, paddle);
-      actor_x[i] += actor_dx[i];
-      actor_y[i] += actor_dy[i];
-    }
+    
     setup_graphics();		// setup PPU, clear screen
     sfx_play(SND_START,0);	// play starting sound
     make_floors();		// make random level
+   // make_plats();		// make random level
+
     
     music_play(0);		// start the music
     play_scene();		// play the level
