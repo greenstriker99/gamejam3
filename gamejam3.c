@@ -567,6 +567,8 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
   if (actor->name == ACTOR_PLAYER && actor->state <= WALKING && 
       is_in_gap(actor->x, floors[actor->floor].gap)) {
     fall_down(actor);
+      music_stop();
+
     title();
   }
 }
@@ -709,7 +711,8 @@ void play_scene() {
     }
     if(hit == 3)
     {
-      ppu_off();
+      music_stop();
+
       title();
       return;
     }
