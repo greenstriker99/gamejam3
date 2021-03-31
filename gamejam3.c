@@ -1,13 +1,7 @@
+//Julio Huerta
+//3/30/21
+//Senior Project - Gamejam Game 3 Tower Attack
 
-/*
-A platform game with a randomly generated stage.
-Uses the Famitone2 library for sound and music.
-It scrolls vertically (horizontal mirroring) and nametable
-updates are performed offscreen one row at a time with the
-draw_floor_line() function.
-The enemies use the same movement logic as the player, just
-with random inputs.
-*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -144,8 +138,6 @@ DEF_METASPRITE_2x2_FLIP(playerLRun3, 0xe4, 0);
 DEF_METASPRITE_2x2_FLIP(playerLJump, 0xe8, 0);
 DEF_METASPRITE_2x2_FLIP(playerLClimb, 0xec, 0);
 DEF_METASPRITE_2x2_FLIP(playerLSad, 0xf0, 0);
-
-// rescuee at top of building
 
 // player run sequence
 const unsigned char* const playerRunSeq[16] = {
@@ -460,14 +452,14 @@ void refresh_sprites() {
 // should we scroll the screen upward?
 void check_scroll_up() {
   if (player_screen_y < ACTOR_SCROLL_UP_Y) {
-    set_scroll_pixel_yy(scroll_pixel_yy + 4);	// scroll up
+    set_scroll_pixel_yy(scroll_pixel_yy + 1);	// scroll up
   }
 }
 
 // should we scroll the screen downward?
 void check_scroll_down() {
   if (player_screen_y > ACTOR_SCROLL_DOWN_Y && scroll_pixel_yy > 0) {
-    set_scroll_pixel_yy(scroll_pixel_yy - 1);	// scroll down
+    set_scroll_pixel_yy(scroll_pixel_yy - 3);	// scroll down
   }
 }
 
@@ -559,10 +551,10 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
       if (actor->yy <= get_floor_yy(actor->floor)) {
         if(actor->name == ACTOR_PLAYER && actor->yy >= floors[(actor->floor)+1].ypos * 3 + 12)
       {
-        actor->floor++;
-         actor->yy=floors[actor->floor].ypos;
+         actor->floor++;
+         
       }
-	actor->yy = get_floor_yy(actor->floor)+1;
+	actor->yy = get_floor_yy(actor->floor);
         actor->state = STANDING;
       }
       
@@ -691,7 +683,7 @@ void play_scene() {
   actors[0].state = STANDING;
   actors[0].name = ACTOR_PLAYER;
   actors[0].pal = 3;
-  actors[0].x = 64;
+  actors[0].x = 400;
   actors[0].floor = 0;
   actors[0].yy = get_floor_yy(0);
   // put actor at bottom
@@ -711,11 +703,13 @@ void play_scene() {
     // see if the player hit another actor
     if (check_collision(&actors[0])) {
       fall_down(&actors[0]);
+      actors[0].floor--;
       sfx_play(SND_HIT,0);
       vbright = 8; // flash
     }
     if(hit == 3)
     {
+      ppu_off();
       title();
       return;
     }
@@ -772,6 +766,7 @@ void main() {
     make_floors();		// make random level
     music_play(0);		// start the music
     play_scene();
+    return;
 // play the level
   }
 }
