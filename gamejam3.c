@@ -205,7 +205,6 @@ void make_floors() {
     y += lev->height;
     prevlev = lev;
   }
-  // top floor is special
 
 }
 
@@ -432,6 +431,11 @@ void draw_scoreboard() {
   oam_off = oam_spr(24+8, 24, '0'+(score & 0xf), 2, oam_off);
 }
 
+void draw_lives() {
+
+  oam_off = oam_spr(24+180, 24, '0'+(hit >> 4), 2, oam_off);
+  oam_off = oam_spr(24+188, 24, '0'+(hit & 0xf), 2, oam_off);
+}
 // draw all sprites
 void refresh_sprites() {
   byte i;
@@ -442,11 +446,10 @@ void refresh_sprites() {
     draw_actor(i);
   // draw scoreboard
   draw_scoreboard();
+  draw_lives();
   // hide rest of actors
   oam_hide_rest(oam_off);
 }
-
-// if ladder is close to X position, return ladder X position, otherwise 0
 
 
 // should we scroll the screen upward?
@@ -547,6 +550,18 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
       actor->yy += actor->yvel/3;
       actor->yvel -= 1;
       
+      //***if we jump at wall***
+      if(actor->x == ACTOR_MIN_X)
+      {
+        actor->x = ACTOR_MAX_X;
+        
+      }
+      else if(actor->x == ACTOR_MAX_X)
+      {
+        actor->x = ACTOR_MIN_X;
+        
+      }
+      
       
       if (actor->yy <= get_floor_yy(actor->floor)) {
         if(actor->name == ACTOR_PLAYER && actor->yy >= floors[(actor->floor)+1].ypos * 3 + 12)
@@ -561,8 +576,8 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
       break;
   }
   // don't allow player to travel past left/right edges of screen
-  if (actor->x > ACTOR_MAX_X) actor->x = ACTOR_MAX_X; // we wrapped around right edge
-  if (actor->x < ACTOR_MIN_X) actor->x = ACTOR_MIN_X;
+  if (actor->x == ACTOR_MAX_X) actor->x = ACTOR_MIN_X; // we wrapped around right edge
+  if (actor->x < ACTOR_MIN_X) actor->x = ACTOR_MAX_X;
   // if player lands in a gap, they fall (switch to JUMPING state)
   if (actor->name == ACTOR_PLAYER && actor->state <= WALKING && 
       is_in_gap(actor->x, floors[actor->floor].gap)) {
@@ -591,7 +606,11 @@ void pickup_object(Actor* actor) {
         fall_down(actor);
         sfx_play(SND_HIT,0);
         vbright = 8; // flash
-      } else {
+      }
+      else if(objtype == ITEM_HEART){
+        hit--;
+      }
+      else {
         // we picked up an object, add to score
         score = bcd_add(score, 3);
         sfx_play(SND_COIN,0);
@@ -737,7 +756,7 @@ const char PALETTE[32] = {
   0x16,0x37,0x0D, 0x0,	// enemy sprites
   0x00,0x37,0x25, 0x0,	// rescue person
   0x0d,0x2d,0x3a, 0x0,
-  0x0D,0x37,0x1B	// player sprites
+  0x0D,0x1B,0x1B	// player sprites
 };
 
 // set up PPU
@@ -762,7 +781,8 @@ void setup_sounds() {
 // main program
 void main() {
   setup_sounds();
-  title();// init famitone library
+  title();
+  
   while (1) {
     setup_graphics();		// setup PPU, clear screen
     sfx_play(SND_START,0);	// play starting sound
