@@ -576,8 +576,11 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
       break;
   }
   // don't allow player to travel past left/right edges of screen
+ 
   if (actor->x == ACTOR_MAX_X) actor->x = ACTOR_MIN_X; // we wrapped around right edge
   if (actor->x < ACTOR_MIN_X) actor->x = ACTOR_MAX_X;
+  
+  
   // if player lands in a gap, they fall (switch to JUMPING state)
   if (actor->name == ACTOR_PLAYER && actor->state <= WALKING && 
       is_in_gap(actor->x, floors[actor->floor].gap)) {
