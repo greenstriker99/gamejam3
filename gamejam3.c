@@ -455,7 +455,7 @@ void refresh_sprites() {
 // should we scroll the screen upward?
 void check_scroll_up() {
   if (player_screen_y < ACTOR_SCROLL_UP_Y) {
-    set_scroll_pixel_yy(scroll_pixel_yy + 1);	// scroll up
+    set_scroll_pixel_yy(scroll_pixel_yy + 2);	// scroll up
   }
 }
 
@@ -585,9 +585,7 @@ void move_actor(struct Actor* actor, byte joystick, bool scroll) {
   if (actor->name == ACTOR_PLAYER && actor->state <= WALKING && 
       is_in_gap(actor->x, floors[actor->floor].gap)) {
     fall_down(actor);
-      music_stop();
-
-    title();
+    actor->floor--;
   }
 }
 
@@ -610,7 +608,7 @@ void pickup_object(Actor* actor) {
         sfx_play(SND_HIT,0);
         vbright = 8; // flash
       }
-      else if(objtype == ITEM_HEART){
+      else if(objtype == ITEM_HEART && hit != 0){
         hit--;
       }
       else {
