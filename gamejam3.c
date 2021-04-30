@@ -295,6 +295,7 @@ void draw_floor_line(byte row_height) {
   }
 }
 
+
 // draw entire stage at current scroll position
 // filling up entire name table
 void draw_entire_stage() {
@@ -316,6 +317,7 @@ word get_ceiling_yy(byte floor) {
   return (floors[floor].ypos + floors[floor].height) * 8 + 16;
 }
 
+
 // set scrolling position
 void set_scroll_pixel_yy(int yy) {
   // draw an offscreen line, every 8 pixels
@@ -332,6 +334,7 @@ void set_scroll_pixel_yy(int yy) {
   // set scroll registers
   scroll(0, 479 - ((yy + 224) % 480));
 }
+
 
 // redraw a floor when object picked up
 void refresh_floor(byte floor) {
@@ -666,7 +669,7 @@ const char* RESCUE_TEXT =
 void type_message(const char* charptr) {
   char ch;
   byte x,y;
-  x = 2;
+  x = 4;
   // compute message y position relative to scroll
   y = ROWS*3 + 39 - scroll_tile_y;
   // repeat until end of string (0) is read
@@ -696,6 +699,54 @@ void rescue_scene() {
   // wait 2 seconds
   delay(100);
 }
+
+void type_message2(const char* charptr) {
+  char ch;
+  byte x,y;
+  x = 4;
+  // compute message y position relative to scroll
+  y = ROWS*3 + 39 - scroll_tile_y;
+  // repeat until end of string (0) is read
+  while ((ch = *charptr++)) {
+    while (y >= 60) y -= 60; // compute (y % 60)
+    // newline character? go to start of next line
+    if (ch == '\n') {
+      x = 2;
+      y++;
+    } else {
+      // put character into nametable
+      vrambuf_put(getntaddr(x, y+4), &ch, 1);
+      x++;
+    }
+    // typewriter sound
+    sfx_play(SND_HIT,0);
+    // flush buffer and wait a few frames
+    vrambuf_flush();
+    delay(5);
+  }
+}
+const char* GAMEOVER_TEXT = 
+  "You fell down the tower!";
+
+const char* RESTART_TEXT = 
+  "Press ENTER to play again!";
+
+void game_over() {
+  music_stop();
+  type_message(GAMEOVER_TEXT);
+  type_message2(RESTART_TEXT);
+
+  // wait 2 seconds
+  //delay(100);
+  while(1){     
+     if(pad_trigger(0)&PAD_START)
+     {
+       return;
+     }
+    
+    }
+}
+
 
 // game loop
 void play_scene() {
@@ -732,8 +783,9 @@ void play_scene() {
     if(hit == 3)
     {
       music_stop();
+      game_over();
 
-      title();
+      //title();
       return;
     }
     // flash effect
@@ -790,7 +842,8 @@ void main() {
     make_floors();		// make random level
     music_play(0);		// start the music
     play_scene();
-    return;
+    hit = 0;
+    //return;
 // play the level
   }
 }
