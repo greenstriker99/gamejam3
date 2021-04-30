@@ -480,11 +480,13 @@ void fall_down(struct Actor* actor) {
 void title()
 {
   ppu_off();
-  pal_col(0,0x02);	// set screen to dark blue
+  pal_col(0,0x1B);	// set screen to dark blue
   pal_col(1,0x14);	// fuchsia
   pal_col(2,0x20);	// grey
   pal_col(3,0x30);
   
+  vram_adr(NTADR_A(10, 9));
+  vram_write("TOWER EXCAPE", 12);
   
   vram_adr(NTADR_A(6, 12));
   vram_write("Press ENTER to Start", 20);
@@ -501,6 +503,7 @@ void title()
      if(pad_trigger(0)&PAD_START)
      {
        return;
+
      }
     
     }
@@ -665,6 +668,8 @@ bool check_collision(Actor* a) {
 const char* RESCUE_TEXT = 
   "You made it to the top";
 
+
+
 // draw a message on the screen
 void type_message(const char* charptr) {
   char ch;
@@ -692,9 +697,12 @@ void type_message(const char* charptr) {
   }
 }
 
+
+
 // reward scene when player reaches roof
 void rescue_scene() {
   music_stop();
+  type_message(RESCUE_TEXT);
   type_message(RESCUE_TEXT);
   // wait 2 seconds
   delay(100);
@@ -835,6 +843,7 @@ void setup_sounds() {
 void main() {
   setup_sounds();
   title();
+
   
   while (1) {
     setup_graphics();		// setup PPU, clear screen
@@ -843,6 +852,7 @@ void main() {
     music_play(0);		// start the music
     play_scene();
     hit = 0;
+    score = 0;
     //return;
 // play the level
   }
